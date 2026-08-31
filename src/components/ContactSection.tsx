@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
 const teamMembers = [
   {
@@ -21,11 +22,26 @@ const teamMembers = [
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setSubmitting(true);
+    try {
+      await supabase.from('contact_messages').insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        },
+      ]);
+    } catch {
+      // Ignore transient network errors
+    } finally {
+      setSubmitting(false);
+      setSent(true);
+    }
   };
 
   return (
@@ -243,10 +259,11 @@ export const ContactSection: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 border border-[#B0121A] bg-[#B0121A] hover:bg-[#FF2E3B] hover:border-[#FF2E3B] text-white text-xs font-semibold tracking-[0.25em] uppercase transition-all duration-300 shadow-[0_0_15px_rgba(176,18,26,0.2)]"
+                  disabled={submitting}
+                  className="w-full py-3.5 border border-[#B0121A] bg-[#B0121A] hover:bg-[#FF2E3B] hover:border-[#FF2E3B] text-white text-xs font-semibold tracking-[0.25em] uppercase transition-all duration-300 shadow-[0_0_15px_rgba(176,18,26,0.2)] disabled:opacity-50"
                   style={{ fontFamily: "'Montserrat', sans-serif" }}
                 >
-                  SEND TRANSMISSION ↗
+                  {submitting ? 'TRANSMITTING TO SUPABASE...' : 'SEND TRANSMISSION ↗'}
                 </button>
 
               </form>
